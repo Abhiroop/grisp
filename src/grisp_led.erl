@@ -75,7 +75,9 @@ start_link() ->
 -spec color(position(), color()) -> ok.
 color(Pos, Color) -> pattern(Pos, [{infinity, Color}]).
 
-readcolor(Pos) -> pattern(Pos,readc).
+-spec readcolor(position()) -> color().
+readcolor(Pos) ->
+    gen_server:call(?MODULE, {readc, Pos}).
 
 
 % @doc Turn of an LED.
@@ -147,23 +149,38 @@ init(undefined) ->
     ]}}.
 
 % @private
-handle_call(Request, From, _State) -> error({unknown_call, Request, From}).
-
-% @private
-handle_cast({pattern, Pos, readc}, #state{leds = Leds}) ->
+handle_call({readc, Pos}, _From, #state{leds = Leds} = State) ->
     {_,{X,_} } = lists:nth(Pos,Leds),
     Z = lists:nth(1,X),
     case Z of
-        {_, off} -> off;
-        {_, black} -> black;
-        {_, blue} -> blue;
-        {_, green} -> green;
-        {_, aqua} -> aqua;
-        {_, red} -> red;
-        {_, magenta} -> magenta;
-        {_, yellow} -> yellow;
-        {_, white} -> white
+        {_, off}   -> {reply, off, State};
+        {_, black} -> {reply, black, State};
+        {_, blue}  -> {reply, blue, State};
+        {_, green} -> {reply, green, State};
+        {_, aqua}  -> {reply, aqua, State};
+        {_, red}     -> {reply, red, State};
+        {_, magenta} -> {reply, magenta, State};
+        {_, yellow}  -> {reply, yellow, State};
+        {_, white}   -> {reply, white, State}
     end;
+
+handle_call(Request, From, _State) -> error({unknown_call, Request, From}).
+
+% @private
+%% handle_cast({pattern, Pos, readc}, #state{leds = Leds}) ->
+%%     {_,{X,_} } = lists:nth(Pos,Leds),
+%%     Z = lists:nth(1,X),
+%%     case Z of
+%%         {_, off} -> off;
+%%         {_, black} -> black;
+%%         {_, blue} -> blue;
+%%         {_, green} -> green;
+%%         {_, aqua} -> aqua;
+%%         {_, red} -> red;
+%%         {_, magenta} -> magenta;
+%%         {_, yellow} -> yellow;
+%%         {_, white} -> white
+%%     end;
 
 handle_cast({pattern, Pos, NewPattern}, State) ->
     NewState = update_led(Pos, State, fun({_OldPattern, Timer}) ->
